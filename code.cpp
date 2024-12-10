@@ -1,26 +1,28 @@
 #include <bits/stdc++.h>
+#include <fstream>
 #include <graphics.h>
 #include <windows.h>
 
 using namespace std;
+ifstream fin("joc.in");
+ofstream fout("joc.ou");
+
 
 struct piesa{
     int player;
-    int dimensiune;
+    int dimensiune;///1-mic  2-mediu   3-mare
     bool folosit;
 };
 
-/*
-struct tabla{
-    int player;
-    piesa actuala;
-    piesa piesaAnterioara==NULL;
-    piesa piesaAnterioara==NULL;
+
+struct cell{
+    int ctPiese;
+    piesa *stiva;
 };
-*/
 
 
-tabla T[3][3];  ///TABLA DE JOC
+
+cell T[3][3];  ///TABLA DE JOC
 piesa P1[6],P2[6]; ///Cei 2 PLAYERI
 int winner,nrPiesa,linie,coloana;
 
@@ -41,20 +43,45 @@ void Configurare(){
     ///Configurare tabla de joc
     for(i=0;i<3;i++)
         for(j=0;j<3;j++)
-        T[i][j].player=T[i][j].dimensiune=T[i][j].folosit=0;
+            {T[i][j].ctPiese=0;
+            T[i][j].stiva=new piesa[3];
+            }
 }
 
 
 ///Cazurile de castig
 bool Win(){
-    if(T[0][0].player==T[0][1].player && T[0][0].player==T[0][2].player && T[0][0].dimensiune){winner=T[0][0].player; return 1;}
-    if(T[1][0].player==T[1][1].player && T[1][0].player==T[1][2].player && T[1][1].dimensiune){winner=T[1][0].player; return 1;}
-    if(T[2][0].player==T[2][1].player && T[2][0].player==T[2][2].player && T[2][1].dimensiune){winner=T[2][0].player; return 1;}
-    if(T[0][0].player==T[1][0].player && T[0][0].player==T[2][0].player && T[2][0].dimensiune){winner=T[0][0].player; return 1;}
-    if(T[0][1].player==T[1][1].player && T[0][1].player==T[2][1].player && T[2][1].dimensiune){winner=T[0][1].player; return 1;}
-    if(T[0][2].player==T[1][2].player && T[0][2].player==T[2][2].player && T[2][2].dimensiune){winner=T[0][2].player; return 1;}
-    if(T[0][0].player==T[1][1].player && T[1][1].player==T[2][2].player && T[2][2].dimensiune){winner=T[0][0].player; return 1;}
-    if(T[0][2].player==T[1][1].player && T[1][1].player==T[2][0].player && T[2][0].dimensiune){winner=T[0][2].player; return 1;}
+    int i;
+    ///LINIE
+    for(i=0;i<3;i++){
+        if(T[i][0].ctPiese && T[i][1].ctPiese && T[i][2].ctPiese && T[i][0].stiva[T[i][0].ctPiese-1].player == T[i][1].stiva[T[i][1].ctPiese-1].player &&
+            T[i][0].stiva[T[i][0].ctPiese-1].player == T[i][2].stiva[T[i][2].ctPiese-1].player)
+        {winner=T[i][0].stiva[T[i][0].ctPiese-1].player;
+            return 1;
+        }
+    }
+
+    ///COLOANA
+    for(i=0;i<3;i++){
+        if(T[0][i].ctPiese && T[1][i].ctPiese && T[2][i].ctPiese && T[0][i].stiva[T[0][i].ctPiese-1].player == T[1][i].stiva[T[1][i].ctPiese-1].player &&
+            T[0][i].stiva[T[0][i].ctPiese-1].player == T[2][i].stiva[T[2][i].ctPiese-1].player)
+        {winner=T[0][i].stiva[T[0][i].ctPiese-1].player;
+            return 1;
+        }
+    }
+
+    ///DIAGONALE
+    if(T[0][0].ctPiese && T[1][1].ctPiese && T[2][2].ctPiese &&T[0][0].stiva[T[0][0].ctPiese-1].player==T[1][1].stiva[T[1][1].ctPiese-1].player &&
+       T[0][0].stiva[T[0][0].ctPiese-1].player==T[2][2].stiva[T[2][2].ctPiese-1].player)
+        {winner=T[0][0].stiva[T[0][0].ctPiese-1].player;
+            return 1;
+        }
+    if(T[0][2].ctPiese && T[1][1].ctPiese && T[2][0].ctPiese && T[0][2].stiva[T[0][2].ctPiese-1].player==T[1][1].stiva[T[1][1].ctPiese-1].player &&
+       T[1][1].stiva[T[1][1].ctPiese-1].player==T[2][0].stiva[T[2][0].ctPiese-1].player)
+        {winner=T[1][1].stiva[T[1][1].ctPiese-1].player;
+            return 1;
+        }
+
     return 0;
 }
 
@@ -75,17 +102,19 @@ void CitireDate(){
 void AfisareMatr(){
     for(int i=0;i<3;i++){
         for(int j=0;j<3;j++)
-            if(T[i][j].player==1){
-                //SetConsoleTextAttribute(GetStHandle(STD_OUTPUT_HANDLE),12);///AFISEAZA ROSU-PLAYER1
-                cout<<T[i][j].dimensiune<<" ";
+            if(T[i][j].ctPiese){
+                if(T[i][j].stiva[T[i][j].ctPiese - 1].player==1){
+                    //SetConsoleTextAttribute(GetStHandle(STD_OUTPUT_HANDLE),12);///AFISEAZA ROSU-PLAYER1
+                    cout<<"P1("<<T[i][j].stiva[T[i][j].ctPiese - 1].dimensiune<<") ";
+                }
+                else if(T[i][j].stiva[T[i][j].ctPiese - 1].player==2){
+                    //SetConsoleTextAttribute(GetStHandle(STD_OUTPUT_HANDLE),34);///AFISEAZA ALBASTRU-PLAYER2
+                    cout<<"P2("<<T[i][j].stiva[T[i][j].ctPiese - 1].dimensiune<<") ";
+                }
             }
-            else if(T[i][j].player==2){
-                //SetConsoleTextAttribute(GetStHandle(STD_OUTPUT_HANDLE),34);///AFISEAZA ALBASTRU-PLAYER2
-                cout<<T[i][j].dimensiune<<" ";
-            }
-                else{
+            else{
                     //SetConsoleTextAttribute(GetStHandle(STD_OUTPUT_HANDLE),37);///AFISEAZA ALB
-                    cout<<T[i][j].dimensiune<<" ";
+                    cout << "  -  ";
                 }
         cout<<endl;
     }
@@ -99,9 +128,10 @@ void PlasarePiesa(int x){
     bool ok=0;
     while(!ok){
         if(x==1){
-            if(P1[nrPiesa].dimensiune>T[linie][coloana].dimensiune && !P1[nrPiesa].folosit){
+            if(P1[nrPiesa].dimensiune>T[linie][coloana].stiva[T[linie][coloana].ctPiese - 1].dimensiune && !P1[nrPiesa].folosit || T[linie][coloana].ctPiese == 0){
                 ok=1;
-                T[linie][coloana]=P1[nrPiesa];
+                T[linie][coloana].stiva[T[linie][coloana].ctPiese] = P1[nrPiesa];
+                T[linie][coloana].ctPiese++;
                 P1[nrPiesa].folosit=1;
             }
             else{
@@ -110,9 +140,10 @@ void PlasarePiesa(int x){
             }
         }
          else{
-            if(P2[nrPiesa].dimensiune>T[linie][coloana].dimensiune && !P2[nrPiesa].folosit){
+            if(P2[nrPiesa].dimensiune>T[linie][coloana].stiva[T[linie][coloana].ctPiese - 1].dimensiune && !P2[nrPiesa].folosit || T[linie][coloana].ctPiese == 0){
                 ok=1;
-                T[linie][coloana]=P2[nrPiesa];
+                T[linie][coloana].stiva[T[linie][coloana].ctPiese] = P2[nrPiesa];
+                T[linie][coloana].ctPiese++;
                 P2[nrPiesa].folosit=1;
             }
             else{
@@ -123,7 +154,9 @@ void PlasarePiesa(int x){
     }
 }
 
-void Playing(){
+
+///2 PLAYERI
+void Playing2(){
     int ct=1;
     //SetConsoleTextAttribute(GetStHandle(STD_OUTPUT_HANDLE),37);///AFISEAZA ALB
     do{
@@ -150,6 +183,6 @@ int main()
 {
     cout<<"----------GOBBLET GOBBLERS----------"<<endl<<endl<<endl;
     Configurare();
-    Playing();
+    Playing2();
     return 0;
 }
