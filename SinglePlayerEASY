@@ -1,0 +1,64 @@
+
+bool MutareValida(int l, int c, piesa *p) {
+    return (l >= 0 && l < 3 && c >= 0 && c < 3 && (!T[l][c].stiva || T[l][c].stiva->dimensiune < p->dimensiune));
+}
+
+void CalculatorPlaseaza() {
+    while (true) {
+        ///Alege random piesa si locul unde se plaseaza
+        nrPiesa = rand() % 6;
+        linie = rand() % 3;
+        coloana = rand() % 3;
+
+        piesa *p = &P[1][nrPiesa];
+        if (!p->peTabla && MutareValida(linie, coloana, p)) {
+            AdaugarePiesaPeTabla(linie, coloana, p);
+            cout << "Calculatorul a plasat piesa " << nrPiesa << " pe linia " << linie << " si coloana " << coloana << endl;
+            break;
+        }
+    }
+}
+
+void CalculatorMuta() {
+    while (true) {
+        ///Alege linia si coloana random
+        int l = rand() % 3;
+        int c = rand() % 3;
+
+        if (T[l][c].stiva && T[l][c].stiva->player == 1) {
+            piesa *p = T[l][c].stiva;
+
+            linie = rand() % 3;
+            coloana = rand() % 3;
+
+            if (MutareValida(linie, coloana, p)) {
+                StergerePiesaPeTabla(l, c);
+                AdaugarePiesaPeTabla(linie, coloana, p);
+                cout << "Calculatorul a mutat o piesa de la linia " << l << ", coloana " << c << " la linia " << linie << ", coloana " << coloana << endl;
+                break;
+            }
+        }
+    }
+}
+
+
+void Playing1Easy(){
+    int turnPl=0;
+    do{
+        if(!turnPl){
+            AlegereOptiune(turnPl);
+            AfisareMatr();
+            if(WinCases(T)) break;
+        }
+        else{
+            ///Alegerea de a plasa o piesa noua pe tabla sau de a muta este tot random facuta
+            if (rand() % 2 == 0) CalculatorPlaseaza();
+            else CalculatorMuta();
+            AfisareMatr();
+            if(WinCases(T)) break;
+            }
+        turnPl=1-turnPl;
+
+    }while(!WinCases(T));
+    WinnerAnnouncement();
+}
