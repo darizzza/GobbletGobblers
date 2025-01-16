@@ -19,6 +19,8 @@ piesa P[2][6]; ///Cei 2 PLAYERI
 int winner,nrPiesa,linie,coloana;
 bool testOpt;
 
+int nrMut;
+
 
 void ConfigurareJocPiese(){
     ///ConfigurareJocPiese playeri-piese-tabla
@@ -285,6 +287,7 @@ void CalculatorMuta() {
 
 void Playing1Easy(){
     int turnPl=0;
+    srand(time(NULL));
     do{
         if(!turnPl){
             AlegereOptiune(turnPl);
@@ -293,7 +296,7 @@ void Playing1Easy(){
         }
         else{
             ///Alegerea de a plasa o piesa noua pe tabla sau de a muta este tot random facuta
-            if (rand() % 2 == 0) CalculatorPlaseaza();
+            if (rand() % 2 == 0 || !nrMut) {CalculatorPlaseaza(); nrMut=1;}
             else CalculatorMuta();
             AfisareMatr();
             if(WinCases(T)) break;
