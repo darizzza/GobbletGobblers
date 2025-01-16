@@ -192,6 +192,25 @@ void MutarePiesa(int x){///X ESTE PLAYER-UL
     testOpt=1;
 }
 
+void AfisarePieseFolosite(int x){
+    int i;
+    cout<<endl;
+    for(i=0;i<6;i++)
+        cout<<i<<" ";
+    cout<<endl;
+    for(i=0;i<6;i++)
+        cout<<P[x][i].dimensiune<<" ";
+    cout<<endl;
+    for(i=0;i<6;i++){
+        if(P[x][i].peTabla==1)
+            cout<<"X";
+        else cout<<"n";
+        cout<<" ";
+    }
+    cout<<endl<<endl;
+}
+
+
 void AlegereOptiune(int x){
     char optiune;
     testOpt=0;
@@ -203,7 +222,7 @@ void AlegereOptiune(int x){
         cout<<"Jucator "<<x+1<<":"<<endl;
         cout<<"ASEZI DIN SIR UN GOBBLER PE TABLA ( A )     sau      MUTI DE PE TABLA ( M ):"<<endl;
         cin>>optiune;
-        if(optiune=='A' || optiune=='a') {testOpt=1; PlasarePiesa(x);}
+        if(optiune=='A' || optiune=='a') {testOpt=1; AfisarePieseFolosite(x); PlasarePiesa(x);}
         else if(optiune=='M' || optiune=='m') {testOpt=1; MutarePiesa(x);}
             else {cout<<"Optiune invalida!!!  Incearca din nou :("<<endl;}
     }
@@ -220,96 +239,147 @@ void Playing2(){
     WinnerAnnouncement();
 }
 
+bool MutareValida(int l, int c, piesa *p) {
+    return (l >= 0 && l < 3 && c >= 0 && c < 3 && (!T[l][c].stiva || T[l][c].stiva->dimensiune < p->dimensiune));
+}
 
+void CalculatorPlaseaza() {
+    while (true) {
+        ///Alege random piesa si locul unde se plaseaza
+        nrPiesa = rand() % 6;
+        linie = rand() % 3;
+        coloana = rand() % 3;
 
-///VS CALCULATOR
+        piesa *p = &P[1][nrPiesa];
+        if (!p->peTabla && MutareValida(linie, coloana, p)) {
+            AdaugarePiesaPeTabla(linie, coloana, p);
+            cout << "Calculatorul a plasat piesa " << nrPiesa << " pe linia " << linie << " si coloana " << coloana << endl;
+            break;
+        }
+    }
+}
 
-vector<pair<int, int>> getValidMoves(cell T[3][3]) {
-    vector<pair<int, int>> moves;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            if (T[i][j].ctPiese == 0) {
-                moves.push_back({i, j});
+void CalculatorMuta() {
+    while (true) {
+        ///Alege linia si coloana random
+        int l = rand() % 3;
+        int c = rand() % 3;
+
+        if (T[l][c].stiva && T[l][c].stiva->player == 1) {
+            piesa *p = T[l][c].stiva;
+
+            linie = rand() % 3;
+            coloana = rand() % 3;
+
+            if (MutareValida(linie, coloana, p)) {
+                StergerePiesaPeTabla(l, c);
+                AdaugarePiesaPeTabla(linie, coloana, p);
+                cout << "Calculatorul a mutat o piesa de la linia " << l << ", coloana " << c << " la linia " << linie << ", coloana " << coloana << endl;
+                break;
             }
         }
     }
-    return moves;
 }
 
-void applyMove(cell T[3][3], int player, pair<int, int> move) {
-    if (T[move.first][move.second].ctPiese == 0) {
-        piesa* newPiesa = new piesa();
-        newPiesa->player = player;
-        newPiesa->peTabla = true;
-        newPiesa->dimensiune = 1;
-        T[move.first][move.second].stiva = newPiesa;
-        T[move.first][move.second].ctPiese++;
-    }
-}
+///VS CALCULATOR EASY
 
-int evaluate(cell T[3][3], int player) {
-    if (WinCases(T)) {
-        return (winner == player) ? 10 : -10;
-    }
-    return 0;
-}
-
-int minimax(cell T[3][3], int depth, bool isMaximizing, int player) {
-    int score = evaluate(T, player);
-
-    if (score == 10 || score == -10) return score;
-    if (depth == 0) return 0;
-
-    vector<pair<int, int>> validMoves = getValidMoves(T);
-
-    if (isMaximizing) {
-        int best = -1000;
-        for (auto move : validMoves) {
-            applyMove(T, player, move);
-            best = max(best, minimax(T, depth - 1, false, 1 - player));
-            StergerePiesaPeTabla(move.first, move.second);
+void Playing1Easy(){
+    int turnPl=0;
+    do{
+        if(!turnPl){
+            AlegereOptiune(turnPl);
+            AfisareMatr();
+            if(WinCases(T)) break;
         }
-        return best;
-    } else {
-        int best = 1000;
-        for (auto move : validMoves) {
-            applyMove(T, 1 - player, move);
-            best = min(best, minimax(T, depth - 1, true, 1 - player));
-            StergerePiesaPeTabla(move.first, move.second);
-        }
-        return best;
-    }
+        else{
+            ///Alegerea de a plasa o piesa noua pe tabla sau de a muta este tot random facuta
+            if (rand() % 2 == 0) CalculatorPlaseaza();
+            else CalculatorMuta();
+            AfisareMatr();
+            if(WinCases(T)) break;
+            }
+        turnPl=1-turnPl;
+
+    }while(!WinCases(T));
+    WinnerAnnouncement();
 }
 
-pair<int, int> findBestMove(cell T[3][3], int player) {
-    int bestVal = -1000;
-    pair<int, int> bestMove;
+///VS CALCULATOR---strategie
 
-    vector<pair<int, int>> validMoves = getValidMoves(T);
-    for (auto move : validMoves) {
-        applyMove(T, player, move);
-        int moveVal = minimax(T, 2, false, player);
-        StergerePiesaPeTabla(move.first, move.second);
-
-        if (moveVal > bestVal) {
-            bestMove = move;
-            bestVal = moveVal;
+void StrategieCalculator(){
+    int lin,col;
+    ///Plasare in caz de castig evident
+    for(lin=0;lin<3;lin++){
+        for(col=0;col<3;col++)
+        if(T[lin][col].ctPiese==0){
+            for(int i=0;i<6;i++)
+                if(P[1][i].peTabla){
+                    AdaugarePiesaPeTabla(lin,col, &P[1][i]);
+                    if(WinCases(T))return;
+                    StergerePiesaPeTabla(lin,col);
+                }
         }
     }
-    return bestMove;
+
+    ///Plasare pentru a bloca adversarul
+    for(lin=0;lin<3;lin++){
+        for(col=0;col<3;col++){
+            if(T[lin][col].ctPiese==0){
+                for(int i=0;i<6;i++){
+                    if(P[0][i].peTabla){
+                        AdaugarePiesaPeTabla(lin,col,&P[0][i]);
+                        if(WinCases(T)){
+                            StergerePiesaPeTabla(lin,col);
+                            AdaugarePiesaPeTabla(lin,col, &P[1][i]);
+                            return;
+                        }
+                        StergerePiesaPeTabla(lin,col);
+                    }
+                }
+            }
+        }
+    }
+
+    for(int i=0;i<6;i++){
+        if(!P[1][i].peTabla){
+            for(lin=0;lin<3;lin++){
+                for(col=0;col<3;col++){
+                    if(T[lin][col].ctPiese==0){
+                        AdaugarePiesaPeTabla(lin,col, &P[1][i]);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    for(lin=0;lin<3;lin++){
+        for(col=0;col<3;col++){
+            if(T[lin][col].ctPiese>0 && T[lin][col].stiva->player==1){
+                for(int nl=0;nl<3;nl++){
+                    for(int nc=0;nc<3;nc++){
+                        if((nl!=lin || nc!=col) && MutareValida(nl,nc,T[lin][col].stiva)){
+                            piesa *p=T[lin][col].stiva;
+                            StergerePiesaPeTabla(lin,col);
+                            AdaugarePiesaPeTabla(nl,nc,p);
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
-
-void Playing1(){
+void Playing1Hard(){
     int turnPl = 0;
     do {
         if (turnPl == 0) {
             AlegereOptiune(turnPl);
         } else {
             // AI move
-            pair<int, int> bestMove = findBestMove(T, turnPl);
-            applyMove(T, turnPl, bestMove);
-            cout << "AI a mutat la " << bestMove.first << " " << bestMove.second << endl;
+            cout<<"Tura calculatorului....."<<endl;
+            StrategieCalculator();
         }
         AfisareMatr();
         if (WinCases(T)) break;
@@ -320,6 +390,7 @@ void Playing1(){
 
 void Meniu(){
     int optiune;
+    char opt;
     cout<<"Alege optiune:"<<endl;
     cout<<"1. SINGLE PLAYER "<<endl;
     cout<<"2. MULTIPLAYER "<<endl;
@@ -327,8 +398,14 @@ void Meniu(){
     cout<<endl<<endl;
     cout<<"Alegeti optiunea (1 / 2 / 3): ";
     cin>>optiune;
-    if(optiune==1)Playing1();
-    else if(optiune==2)Playing2();
+    if(optiune==2)Playing2();
+    else if(optiune==1)
+        {cout<<"EASY  /  HARD"<<endl;
+        cout<<"Alege optiunea (E / H): ";
+        cin>>opt;
+        if(opt=='e' || opt=='E') Playing1Easy();
+        else Playing1Hard();
+        }
         else {cout<<"PA!";}
 }
 int main()
